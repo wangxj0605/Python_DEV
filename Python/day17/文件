@@ -1,0 +1,44 @@
+import ddt
+import unittest
+from config.logConf.logconfig import basic_logconfig
+from config.dataConf.basicDataprovider import BasicDataprovider
+from config.dataConf.constants.logConstants import logLevelConstants
+from basicInvoke.fileReader.getFile import getCurrent_filename
+from basicInvoke.basicRequest.httpInvoke.requestUtil import requestModel
+from basicInvoke.basicAssert.assertUtil import assertModel
+from config.reportConf.reportConf import runnerWithReport
+
+rqModel = requestModel.static_init()
+logger = basic_logconfig(getCurrent_filename(__file__)).init_logconfig(logLevelConstants.LOG_DEBUG)
+
+
+## 使用ddt数据来驱动
+@ddt.ddt
+class dataDrivenByddtTest(unittest.TestCase):
+
+    def setUp(self):
+        print('start test..')
+
+
+    # 使用ddt数据驱动
+    @ddt.data(* BasicDataprovider().set_iterList_forSingleApi(api_KeyStr="membershipsecond"))
+    @ddt.unpack
+    def test_addMember(self,req_api,req_method,req_body,req_header):
+        logger.debug("开始请求membershipsecond接口，请求方法为: %s ,接口名: %s,头部: %s,请求体为: %s"%(
+            req_method,req_api,req_header,req_body)
+        )
+        resp = rqModel.requestUtil_by_post(api=req_api, header=eval(req_header), body=eval(req_body))
+        assertMsg = assertModel().assert_response_data(respData=resp['code'],expectData='1',ErrorMessge="code校验失败")
+        logger.debug(assertMsg)
+
+
+    def tearDown(self):
+        print("test over!")
+
+
+
+if __name__ == '__main__':
+    runnerWithReport(getCurrent_filename(__file__)).init_runner(
+        title="memberSecond-report",
+        description="会员二次确认的测试用例")\
+        .run(unittest.TestLoader().loadTestsFromTestCase(dataDrivenByddtTest))
